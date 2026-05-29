@@ -24,6 +24,7 @@ from sklearn.pipeline import Pipeline
 
 from src.data import DEFAULT_DATA_PATH, clean_data, load_raw_data, prepare_data
 from src.pipeline import build_preprocessing
+from src.visualize import DEFAULT_PLOTS_DIR, save_automl_interpretation_plots
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -153,6 +154,7 @@ def train_automl_model(
     model_path: str | Path = DEFAULT_BEST_MODEL_PATH,
     params_path: str | Path = DEFAULT_BEST_PARAMS_PATH,
     metrics_path: str | Path = DEFAULT_BEST_METRICS_PATH,
+    plots_dir: str | Path = DEFAULT_PLOTS_DIR,
     n_trials: int = 20,
     test_size: float = 0.2,
     validation_size: float = 0.25,
@@ -216,6 +218,7 @@ def train_automl_model(
     }
     _save_json(best_params_artifact, params_path)
     _save_json(best_metrics, metrics_path)
+    save_automl_interpretation_plots(best_model, X_test, y_test, study, plots_dir)
 
     return AutoMLResult(
         best_model=best_model,

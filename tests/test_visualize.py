@@ -1,6 +1,8 @@
 import pandas as pd
+import optuna
 
 from src.visualize import (
+    plot_optuna_history,
     plot_churn_distribution,
     plot_confusion_matrix,
     plot_monthly_charges_by_churn,
@@ -52,6 +54,18 @@ def test_plot_roc_curve_creates_file(tmp_path):
     output_path = tmp_path / "plots" / "roc_curve.png"
 
     result_path = plot_roc_curve([0, 0, 1, 1], [0.1, 0.4, 0.7, 0.9], output_path)
+
+    assert result_path == output_path
+    assert output_path.exists()
+    assert output_path.stat().st_size > 0
+
+
+def test_plot_optuna_history_creates_file(tmp_path):
+    output_path = tmp_path / "plots" / "optuna_history.png"
+    study = optuna.create_study(direction="maximize")
+    study.optimize(lambda trial: 0.7 + trial.number * 0.01, n_trials=2)
+
+    result_path = plot_optuna_history(study, output_path)
 
     assert result_path == output_path
     assert output_path.exists()

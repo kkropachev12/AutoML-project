@@ -79,7 +79,9 @@ AutoML-артефакты сохраняются в:
 
 - `artifacts/models/best_model.joblib` — лучшая модель;
 - `artifacts/best_params.json` — выбранная модель, лучшие параметры и validation `ROC-AUC`;
-- `artifacts/best_metrics.json` — метрики лучшей модели на test set.
+- `artifacts/best_metrics.json` — метрики лучшей модели на test set;
+- `artifacts/plots/feature_importance.png` — важность признаков лучшей AutoML-модели;
+- `artifacts/plots/optuna_history.png` — история Optuna-подбора.
 
 Запуск обучения с AutoML:
 
@@ -95,6 +97,13 @@ python -m src.train --automl-trials 20
 - [MonthlyCharges по Churn](artifacts/plots/monthly_charges_by_churn.png) сравнивает ежемесячные платежи ушедших и оставшихся клиентов, чтобы оценить связь стоимости услуг с оттоком.
 - [Confusion matrix](artifacts/plots/confusion_matrix.png) показывает количество верных и ошибочных прогнозов по каждому классу.
 - [ROC curve](artifacts/plots/roc_curve.png) показывает способность модели отделять клиентов с оттоком от клиентов без оттока при разных порогах классификации.
+
+После AutoML-обучения дополнительно сохраняются графики для интерпретации выбранной модели и самого процесса подбора:
+
+- [Feature importance](artifacts/plots/feature_importance.png) показывает признаки, которые сильнее всего влияют на прогноз лучшей AutoML-модели. Если выбранная модель поддерживает `feature_importances_`, используются встроенные важности модели. Если такой атрибут недоступен, например у `LogisticRegression`, рассчитывается permutation importance: качество модели сравнивается до и после перемешивания каждого признака.
+- [Optuna optimization history](artifacts/plots/optuna_history.png) показывает значение validation `ROC-AUC` на каждом trial и лучший результат, найденный к текущему trial. Этот график помогает понять, улучшался ли подбор гиперпараметров и насколько стабильным был процесс поиска.
+
+Эти графики нужны для интерпретации результата: feature importance объясняет, какие признаки повлияли на прогноз, а Optuna history показывает, как AutoML пришел к выбранной конфигурации.
 
 ## Структура проекта
 

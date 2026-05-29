@@ -52,6 +52,7 @@ def test_automl_creates_best_params_and_metrics_files(tmp_path):
     csv_path = tmp_path / "telco_customer_churn.csv"
     params_path = tmp_path / "best_params.json"
     metrics_path = tmp_path / "best_metrics.json"
+    plots_dir = tmp_path / "plots"
     _write_sample_telco_csv(csv_path)
 
     result = train_automl_model(
@@ -59,9 +60,12 @@ def test_automl_creates_best_params_and_metrics_files(tmp_path):
         model_path=tmp_path / "models" / "best_model.joblib",
         params_path=params_path,
         metrics_path=metrics_path,
+        plots_dir=plots_dir,
         n_trials=2,
     )
 
     assert params_path.exists()
     assert metrics_path.exists()
+    assert (plots_dir / "feature_importance.png").exists()
+    assert (plots_dir / "optuna_history.png").exists()
     assert all(0 <= value <= 1 for value in result.best_metrics.values())
