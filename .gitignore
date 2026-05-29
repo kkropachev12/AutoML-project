@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local environment files
+.env
+.env.*
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Local data and generated artifacts
+data/*.csv
+artifacts/*.json
+artifacts/plots/*.png
+artifacts/plots/*.jpg
+artifacts/models/*.joblib
+artifacts/models/*.pkl
+
+# Keep project structure
+!data/.gitkeep
+!artifacts/.gitkeep
+!artifacts/plots/.gitkeep
+!artifacts/models/.gitkeep
+
+# OS files
+.DS_Store
+
