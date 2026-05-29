@@ -1,0 +1,36 @@
+# Git and local metadata
+.git/
+.gitignore
+.github/
+
+# Python cache and test cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local environment files
+.env
+.env.*
+
+# Jupyter
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# Local generated artifacts
+artifacts/
+mlruns/
+
+# Local data files except the training CSV used by the project
+data/*.csv
+!data/telco_customer_churn.csv
+
+# Local planning and OS files
+Codex_plan.md
+.DS_Store
