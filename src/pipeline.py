@@ -10,8 +10,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
-def build_baseline_pipeline() -> Pipeline:
-    """Build a baseline preprocessing and classification pipeline."""
+def build_preprocessing() -> ColumnTransformer:
+    """Build preprocessing for numeric and categorical Telco features."""
     numeric_features = make_column_selector(dtype_include=np.number)
     categorical_features = make_column_selector(dtype_exclude=np.number)
 
@@ -28,16 +28,19 @@ def build_baseline_pipeline() -> Pipeline:
         ]
     )
 
-    preprocessing = ColumnTransformer(
+    return ColumnTransformer(
         transformers=[
             ("numeric", numeric_pipeline, numeric_features),
             ("categorical", categorical_pipeline, categorical_features),
         ]
     )
 
+
+def build_baseline_pipeline() -> Pipeline:
+    """Build a baseline preprocessing and classification pipeline."""
     return Pipeline(
         steps=[
-            ("preprocessing", preprocessing),
+            ("preprocessing", build_preprocessing()),
             ("model", LogisticRegression(max_iter=1000)),
         ]
     )

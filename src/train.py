@@ -1,7 +1,8 @@
-"""Train the baseline Telco Customer Churn model."""
+"""Train Telco Customer Churn models."""
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,7 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import train_test_split
 
+from src.automl import train_automl_model
 from src.data import DEFAULT_DATA_PATH, clean_data, load_raw_data, prepare_data
 from src.pipeline import build_baseline_pipeline
 from src.visualize import DEFAULT_PLOTS_DIR, save_baseline_plots
@@ -112,10 +114,41 @@ def train_baseline_model(
     return metrics
 
 
+def train_models(
+    data_path: str | Path = DEFAULT_DATA_PATH,
+    automl_trials: int = 20,
+) -> dict[str, Any]:
+    """Train baseline and AutoML models."""
+    baseline_metrics = train_baseline_model(data_path=data_path)
+    automl_result = train_automl_model(data_path=data_path, n_trials=automl_trials)
+
+    return {
+        "baseline_metrics": baseline_metrics,
+        "automl": {
+            "best_params": automl_result.best_params,
+            "best_metrics": automl_result.best_metrics,
+            "validation_roc_auc": automl_result.validation_roc_auc,
+        },
+    }
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for training."""
+    parser = argparse.ArgumentParser(description="Train Telco churn models.")
+    parser.add_argument(
+        "--automl-trials",
+        type=int,
+        default=20,
+        help="Number of Optuna trials for AutoML.",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
-    """Run baseline training from the command line."""
-    metrics = train_baseline_model()
-    print(json.dumps(metrics, ensure_ascii=False, indent=2))
+    """Run baseline and AutoML training from the command line."""
+    args = parse_args()
+    result = train_models(automl_trials=args.automl_trials)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

@@ -63,6 +63,30 @@ Preprocessing выполняется внутри `Pipeline`:
 - F1-score;
 - ROC-AUC.
 
+## AutoML
+
+AutoML-этап автоматизирует выбор модели и подбор гиперпараметров через `Optuna`. Для каждого trial собирается `Pipeline` с тем же preprocessing из baseline-пайплайна: обработкой числовых признаков, обработкой категориальных признаков и классификатором.
+
+Модели-кандидаты:
+
+- `LogisticRegression`;
+- `RandomForestClassifier`;
+- `GradientBoostingClassifier`.
+
+Для сравнения моделей используется train/validation split внутри обучающей выборки. Optuna максимизирует `ROC-AUC` на validation set, после чего лучшая конфигурация обучается на полной train-части и оценивается на test set.
+
+AutoML-артефакты сохраняются в:
+
+- `artifacts/models/best_model.joblib` — лучшая модель;
+- `artifacts/best_params.json` — выбранная модель, лучшие параметры и validation `ROC-AUC`;
+- `artifacts/best_metrics.json` — метрики лучшей модели на test set.
+
+Запуск обучения с AutoML:
+
+```bash
+python -m src.train --automl-trials 20
+```
+
 ## Визуализации
 
 После обучения baseline-модели сохраняются графики для анализа данных и качества классификации:
