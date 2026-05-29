@@ -22,6 +22,37 @@
 
 Датасет содержит информацию о клиентах телеком-компании: подключенные услуги, тип договора, способ оплаты, ежемесячные платежи, общий размер платежей и факт оттока.
 
+## Схема ML-пайплайна
+
+```mermaid
+flowchart TD
+    A["Extract<br/>CSV Telco Customer Churn"] --> B["Transform<br/>TotalCharges cleanup<br/>missing values<br/>categorical encoding<br/>train/test split"]
+    B --> C["AutoML<br/>Optuna<br/>model selection<br/>hyperparameter tuning"]
+    C --> D["Evaluation<br/>Accuracy<br/>Precision<br/>Recall<br/>F1-score<br/>ROC-AUC<br/>Confusion Matrix"]
+    D --> E["Load<br/>model, metrics and plots<br/>artifacts/"]
+    C --> F["Monitoring<br/>MLflow<br/>resource_usage.json"]
+    D --> F
+    E --> F
+    G["Infrastructure<br/>Docker<br/>GitHub Actions"] -.-> A
+    G -.-> B
+    G -.-> C
+    G -.-> D
+    G -.-> E
+    G -.-> F
+```
+
+Схема показывает полный путь данных и результатов в проекте. ETL начинается с загрузки CSV-файла Telco Customer Churn, затем данные очищаются, пропуски обрабатываются, категориальные признаки кодируются, а выборка делится на train и test.
+
+AutoML-блок отвечает за подбор модели через `Optuna`: проект пробует несколько алгоритмов, подбирает гиперпараметры и выбирает лучшую конфигурацию по validation `ROC-AUC`.
+
+Evaluation-блок оценивает лучшую модель на test set по метрикам `Accuracy`, `Precision`, `Recall`, `F1-score`, `ROC-AUC` и сохраняет confusion matrix как график.
+
+Load-блок сохраняет результаты обучения в `artifacts/`: модель, JSON-файлы с параметрами и метриками, а также графики для отчета.
+
+Monitoring связывает ML-эксперименты и ресурсы: `MLflow` хранит параметры, метрики и артефакты лучшего запуска, а `resource_usage.json` показывает время обучения, CPU и RAM.
+
+Infrastructure показывает, что пайплайн можно запускать воспроизводимо в `Docker`, а базовые проверки проекта выполняются через `GitHub Actions`.
+
 ## ETL
 
 ### Extract
