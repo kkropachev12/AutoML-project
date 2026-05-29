@@ -26,6 +26,7 @@ artifacts/plots/*.png
 artifacts/plots/*.jpg
 artifacts/models/*.joblib
 artifacts/models/*.pkl
+mlruns/
 
 # Keep project structure
 !data/.gitkeep

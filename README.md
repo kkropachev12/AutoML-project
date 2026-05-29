@@ -89,6 +89,41 @@ AutoML-артефакты сохраняются в:
 python -m src.train --automl-trials 20
 ```
 
+## Мониторинг
+
+Для контроля качества экспериментов используется `MLflow`. После AutoML-обучения проект пытается записать отдельный run с параметрами, метриками и артефактами лучшей модели. Если `MLflow` не установлен или логирование недоступно, основной pipeline не падает: обучение, сохранение модели, JSON-файлов и графиков продолжаются.
+
+В MLflow логируются параметры лучшей AutoML-модели:
+
+- выбранный тип модели;
+- подобранные гиперпараметры;
+- validation `ROC-AUC`, найденный Optuna.
+
+Метрики качества лучшей модели на test set:
+
+- Accuracy;
+- Precision;
+- Recall;
+- F1-score;
+- ROC-AUC.
+
+Логируемые артефакты:
+
+- `artifacts/best_params.json`;
+- `artifacts/best_metrics.json`;
+- `artifacts/plots/feature_importance.png`;
+- `artifacts/plots/optuna_history.png`;
+- остальные графики из `artifacts/plots`;
+- `artifacts/models/best_model.joblib`.
+
+Запуск MLflow UI для просмотра экспериментов:
+
+```bash
+mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000
+```
+
+После запуска UI будет доступен по адресу `http://127.0.0.1:5000`. В итоговый отчет можно добавить скриншот MLflow UI с run лучшей AutoML-модели.
+
 ## Визуализации
 
 После обучения baseline-модели сохраняются графики для анализа данных и качества классификации:
