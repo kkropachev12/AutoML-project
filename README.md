@@ -58,7 +58,7 @@ ML-задача — бинарная классификация.
 
 ## ETL
 
-ETL реализован в [src/data.py](/Users/kropachev/Projects/netology_automl/src/data.py).
+ETL реализован в [src/data.py](src/data.py).
 
 ### Extract
 
@@ -115,7 +115,7 @@ flowchart TD
 
 Baseline нужен как простая точка сравнения. Он показывает, какого качества можно добиться без подбора разных моделей и гиперпараметров.
 
-Baseline реализован в [src/pipeline.py](/Users/kropachev/Projects/netology_automl/src/pipeline.py) и [src/train.py](/Users/kropachev/Projects/netology_automl/src/train.py).
+Baseline реализован в [src/pipeline.py](src/pipeline.py) и [src/train.py](src/train.py).
 
 Архитектура baseline:
 
@@ -132,7 +132,7 @@ Baseline реализован в [src/pipeline.py](/Users/kropachev/Projects/net
 
 ## AutoML-подход
 
-AutoML реализован в [src/automl.py](/Users/kropachev/Projects/netology_automl/src/automl.py) через `Optuna`.
+AutoML реализован в [src/automl.py](src/automl.py) через `Optuna`.
 
 AutoML не заменяет весь код проекта, а автоматизирует только выбор модели и гиперпараметров. Preprocessing остается общим и таким же понятным, как в baseline.
 
@@ -223,7 +223,7 @@ AutoML-графики:
 
 ## Мониторинг через MLflow и psutil
 
-MLflow-логирование реализовано в [src/tracking.py](/Users/kropachev/Projects/netology_automl/src/tracking.py).
+MLflow-логирование реализовано в [src/tracking.py](src/tracking.py).
 
 В MLflow логируются:
 
@@ -237,7 +237,7 @@ MLflow-логирование реализовано в [src/tracking.py](/Users
 
 Если MLflow недоступен, обучение не падает. Проект просто пропускает MLflow-логирование и продолжает сохранять локальные артефакты.
 
-Ресурсный мониторинг реализован в [src/monitor.py](/Users/kropachev/Projects/netology_automl/src/monitor.py) через `psutil`.
+Ресурсный мониторинг реализован в [src/monitor.py](src/monitor.py) через `psutil`.
 
 После AutoML-запуска сохраняется:
 
@@ -295,7 +295,7 @@ pytest
 
 ## Docker
 
-Dockerfile находится в корне проекта: [Dockerfile](/Users/kropachev/Projects/netology_automl/Dockerfile).
+Dockerfile находится в корне проекта: [Dockerfile](Dockerfile).
 
 Образ использует `python:3.11-slim`, устанавливает зависимости из `requirements.txt` и запускает обучение командой:
 
