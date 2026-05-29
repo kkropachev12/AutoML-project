@@ -19,7 +19,9 @@ env/
 
 # Local data and generated artifacts
 data/*.csv
+!data/telco_customer_churn.csv
 artifacts/*.json
+!artifacts/dataset_info.json
 artifacts/plots/*.png
 artifacts/plots/*.jpg
 artifacts/models/*.joblib
@@ -33,4 +35,3 @@ artifacts/models/*.pkl
 
 # OS files
 .DS_Store
-
