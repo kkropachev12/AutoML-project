@@ -19,7 +19,13 @@ from sklearn.metrics import (
 from sklearn.model_selection import train_test_split
 
 from src.automl import train_automl_model
-from src.data import DEFAULT_DATA_PATH, clean_data, load_raw_data, prepare_data
+from src.data import (
+    DEFAULT_DATA_PATH,
+    DEFAULT_DATASET_INFO_PATH,
+    clean_data,
+    load_raw_data,
+    prepare_data,
+)
 from src.pipeline import build_baseline_pipeline
 from src.visualize import DEFAULT_PLOTS_DIR, save_baseline_plots
 
@@ -75,11 +81,12 @@ def train_baseline_model(
     model_path: str | Path = DEFAULT_MODEL_PATH,
     metrics_path: str | Path = DEFAULT_METRICS_PATH,
     plots_dir: str | Path = DEFAULT_PLOTS_DIR,
+    dataset_info_path: str | Path = DEFAULT_DATASET_INFO_PATH,
     test_size: float = 0.2,
     random_state: int = 42,
 ) -> dict[str, float]:
     """Train and save the baseline churn prediction model."""
-    raw_df = load_raw_data(data_path)
+    raw_df = load_raw_data(data_path, dataset_info_path=dataset_info_path)
     cleaned_df = clean_data(raw_df)
     X, y = prepare_data(cleaned_df)
 

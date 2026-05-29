@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.pipeline import Pipeline
 
 from src.pipeline import build_baseline_pipeline
-from src.train import evaluate_model
+from src.train import evaluate_model, train_baseline_model
 
 
 def _sample_training_data() -> tuple[pd.DataFrame, pd.Series]:
@@ -62,4 +62,29 @@ def test_baseline_metrics_are_between_zero_and_one():
     metrics = evaluate_model(pipeline, X, y)
 
     assert metrics
+    assert all(0 <= value <= 1 for value in metrics.values())
+
+
+def test_train_baseline_model_creates_expected_artifacts(synthetic_telco_csv, tmp_path):
+    model_path = tmp_path / "models" / "baseline_model.joblib"
+    metrics_path = tmp_path / "baseline_metrics.json"
+    plots_dir = tmp_path / "plots"
+    dataset_info_path = tmp_path / "dataset_info.json"
+
+    metrics = train_baseline_model(
+        data_path=synthetic_telco_csv,
+        model_path=model_path,
+        metrics_path=metrics_path,
+        plots_dir=plots_dir,
+        dataset_info_path=dataset_info_path,
+        test_size=0.25,
+    )
+
+    assert model_path.exists()
+    assert metrics_path.exists()
+    assert dataset_info_path.exists()
+    assert (plots_dir / "churn_distribution.png").exists()
+    assert (plots_dir / "monthly_charges_by_churn.png").exists()
+    assert (plots_dir / "confusion_matrix.png").exists()
+    assert (plots_dir / "roc_curve.png").exists()
     assert all(0 <= value <= 1 for value in metrics.values())

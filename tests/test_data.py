@@ -1,39 +1,27 @@
-from pathlib import Path
+import json
 
-import pandas as pd
 from pandas.api.types import is_numeric_dtype
 
 from src.data import clean_data, load_raw_data, prepare_data
 
 
-def _write_sample_telco_csv(path: Path) -> None:
-    df = pd.DataFrame(
-        {
-            "customerID": ["0001-A", "0002-B", "0003-C", "0004-D"],
-            "gender": ["Female", "Male", "Male", "Female"],
-            "tenure": [1, 34, 2, 45],
-            "MonthlyCharges": [29.85, 56.95, 53.85, 42.30],
-            "TotalCharges": ["29.85", "1889.5", "bad-value", " "],
-            "Churn": ["No", "No", "Yes", "Yes"],
-        }
-    )
-    df.to_csv(path, index=False)
+def test_load_raw_data_loads_csv(synthetic_telco_csv, tmp_path):
+    dataset_info_path = tmp_path / "dataset_info.json"
 
-
-def test_load_raw_data_loads_csv(tmp_path):
-    csv_path = tmp_path / "telco_customer_churn.csv"
-    _write_sample_telco_csv(csv_path)
-
-    df = load_raw_data(csv_path, tmp_path / "dataset_info.json")
+    df = load_raw_data(synthetic_telco_csv, dataset_info_path)
 
     assert not df.empty
     assert "Churn" in df.columns
+    assert dataset_info_path.exists()
+
+    dataset_info = json.loads(dataset_info_path.read_text(encoding="utf-8"))
+    assert dataset_info["row_count"] == len(df)
+    assert dataset_info["column_count"] == len(df.columns)
+    assert set(dataset_info["churn_distribution"]) == {"No", "Yes"}
 
 
-def test_clean_data_does_not_break(tmp_path):
-    csv_path = tmp_path / "telco_customer_churn.csv"
-    _write_sample_telco_csv(csv_path)
-    df = load_raw_data(csv_path, tmp_path / "dataset_info.json")
+def test_clean_data_does_not_break(synthetic_telco_csv, tmp_path):
+    df = load_raw_data(synthetic_telco_csv, tmp_path / "dataset_info.json")
 
     cleaned_df = clean_data(df)
 
@@ -41,20 +29,17 @@ def test_clean_data_does_not_break(tmp_path):
     assert cleaned_df.isna().sum().sum() == 0
 
 
-def test_clean_data_converts_total_charges_to_numeric(tmp_path):
-    csv_path = tmp_path / "telco_customer_churn.csv"
-    _write_sample_telco_csv(csv_path)
-    df = load_raw_data(csv_path, tmp_path / "dataset_info.json")
+def test_clean_data_converts_total_charges_to_numeric(synthetic_telco_csv, tmp_path):
+    df = load_raw_data(synthetic_telco_csv, tmp_path / "dataset_info.json")
 
     cleaned_df = clean_data(df)
 
     assert is_numeric_dtype(cleaned_df["TotalCharges"])
+    assert cleaned_df["TotalCharges"].isna().sum() == 0
 
 
-def test_prepare_data_returns_features_and_target(tmp_path):
-    csv_path = tmp_path / "telco_customer_churn.csv"
-    _write_sample_telco_csv(csv_path)
-    df = clean_data(load_raw_data(csv_path, tmp_path / "dataset_info.json"))
+def test_prepare_data_returns_features_and_target(synthetic_telco_csv, tmp_path):
+    df = clean_data(load_raw_data(synthetic_telco_csv, tmp_path / "dataset_info.json"))
 
     X, y = prepare_data(df)
 
@@ -63,10 +48,8 @@ def test_prepare_data_returns_features_and_target(tmp_path):
     assert "customerID" not in X.columns
 
 
-def test_prepare_data_target_has_two_classes(tmp_path):
-    csv_path = tmp_path / "telco_customer_churn.csv"
-    _write_sample_telco_csv(csv_path)
-    df = clean_data(load_raw_data(csv_path, tmp_path / "dataset_info.json"))
+def test_prepare_data_target_has_two_classes(synthetic_telco_csv, tmp_path):
+    df = clean_data(load_raw_data(synthetic_telco_csv, tmp_path / "dataset_info.json"))
 
     _, y = prepare_data(df)
 

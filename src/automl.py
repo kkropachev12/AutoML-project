@@ -22,7 +22,13 @@ from sklearn.metrics import (
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 
-from src.data import DEFAULT_DATA_PATH, clean_data, load_raw_data, prepare_data
+from src.data import (
+    DEFAULT_DATA_PATH,
+    DEFAULT_DATASET_INFO_PATH,
+    clean_data,
+    load_raw_data,
+    prepare_data,
+)
 from src.monitor import DEFAULT_RESOURCE_USAGE_PATH, finish_resource_monitoring
 from src.monitor import start_resource_monitoring
 from src.pipeline import build_preprocessing
@@ -159,6 +165,7 @@ def train_automl_model(
     metrics_path: str | Path = DEFAULT_BEST_METRICS_PATH,
     plots_dir: str | Path = DEFAULT_PLOTS_DIR,
     resource_usage_path: str | Path = DEFAULT_RESOURCE_USAGE_PATH,
+    dataset_info_path: str | Path = DEFAULT_DATASET_INFO_PATH,
     n_trials: int = 20,
     test_size: float = 0.2,
     validation_size: float = 0.25,
@@ -170,7 +177,7 @@ def train_automl_model(
 
     resource_snapshot = start_resource_monitoring()
     try:
-        raw_df = load_raw_data(data_path)
+        raw_df = load_raw_data(data_path, dataset_info_path=dataset_info_path)
         cleaned_df = clean_data(raw_df)
         X, y = prepare_data(cleaned_df)
 
