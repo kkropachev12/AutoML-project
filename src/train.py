@@ -19,6 +19,7 @@ from sklearn.model_selection import train_test_split
 
 from src.data import DEFAULT_DATA_PATH, clean_data, load_raw_data, prepare_data
 from src.pipeline import build_baseline_pipeline
+from src.visualize import DEFAULT_PLOTS_DIR, save_baseline_plots
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -71,6 +72,7 @@ def train_baseline_model(
     data_path: str | Path = DEFAULT_DATA_PATH,
     model_path: str | Path = DEFAULT_MODEL_PATH,
     metrics_path: str | Path = DEFAULT_METRICS_PATH,
+    plots_dir: str | Path = DEFAULT_PLOTS_DIR,
     test_size: float = 0.2,
     random_state: int = 42,
 ) -> dict[str, float]:
@@ -90,6 +92,11 @@ def train_baseline_model(
     model = build_baseline_pipeline()
     model.fit(X_train, y_train)
     metrics = evaluate_model(model, X_test, y_test)
+    y_pred = model.predict(X_test)
+    y_test_binary = _target_to_binary(y_test)
+    y_pred_binary = _target_to_binary(y_pred)
+    y_score = _positive_class_probability(model, X_test)
+    save_baseline_plots(cleaned_df, y_test_binary, y_pred_binary, y_score, plots_dir)
 
     model_artifact_path = Path(model_path)
     model_artifact_path.parent.mkdir(parents=True, exist_ok=True)
