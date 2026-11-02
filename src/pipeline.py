@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+from sklearn.base import BaseEstimator
 from sklearn.compose import ColumnTransformer, make_column_selector
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
@@ -36,11 +37,16 @@ def build_preprocessing() -> ColumnTransformer:
     )
 
 
-def build_baseline_pipeline() -> Pipeline:
-    """Build a baseline preprocessing and classification pipeline."""
+def build_model_pipeline(classifier: BaseEstimator) -> Pipeline:
+    """Combine shared preprocessing with a classifier."""
     return Pipeline(
         steps=[
             ("preprocessing", build_preprocessing()),
-            ("model", LogisticRegression(max_iter=1000)),
+            ("model", classifier),
         ]
     )
+
+
+def build_baseline_pipeline() -> Pipeline:
+    """Build a baseline preprocessing and classification pipeline."""
+    return build_model_pipeline(LogisticRegression(max_iter=1000))

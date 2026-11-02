@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import os
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 os.environ.setdefault(
     "MPLCONFIGDIR",
@@ -21,13 +21,11 @@ import numpy as np
 import optuna
 import pandas as pd
 import seaborn as sns
-from sklearn.metrics import auc, confusion_matrix, roc_curve
 from sklearn.inspection import permutation_importance
+from sklearn.metrics import auc, confusion_matrix, roc_curve
 from sklearn.pipeline import Pipeline
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PLOTS_DIR = PROJECT_ROOT / "artifacts" / "plots"
+from src.config import DEFAULT_PLOTS_DIR
 
 CHURN_DISTRIBUTION_PATH = DEFAULT_PLOTS_DIR / "churn_distribution.png"
 MONTHLY_CHARGES_BY_CHURN_PATH = DEFAULT_PLOTS_DIR / "monthly_charges_by_churn.png"

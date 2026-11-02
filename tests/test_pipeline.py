@@ -1,7 +1,8 @@
 import pandas as pd
 from sklearn.pipeline import Pipeline
 
-from src.pipeline import build_baseline_pipeline
+from src.data import clean_data
+from src.pipeline import build_baseline_pipeline, build_preprocessing
 from src.train import evaluate_model, train_baseline_model
 
 
@@ -88,3 +89,16 @@ def test_train_baseline_model_creates_expected_artifacts(synthetic_telco_csv, tm
     assert (plots_dir / "confusion_matrix.png").exists()
     assert (plots_dir / "roc_curve.png").exists()
     assert all(0 <= value <= 1 for value in metrics.values())
+
+
+def test_imputer_uses_training_median_for_unseen_data():
+    train = clean_data(pd.DataFrame({"TotalCharges": ["10", "bad-value", "30"]}))
+    test = clean_data(pd.DataFrame({"TotalCharges": ["1000", " "]}))
+    preprocessing = build_preprocessing()
+    preprocessing.fit(train)
+    numeric = preprocessing.named_transformers_["numeric"]
+
+    assert numeric.named_steps["imputer"].statistics_[0] == 20.0
+    assert numeric.named_steps["imputer"].transform(test)[1, 0] == 20.0
+    preprocessing.transform(test)
+    assert numeric.named_steps["imputer"].statistics_[0] == 20.0

@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from src.artifacts import save_json
+from src.config import DEFAULT_RESOURCE_USAGE_PATH
 
 LOGGER = logging.getLogger(__name__)
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_RESOURCE_USAGE_PATH = PROJECT_ROOT / "artifacts" / "resource_usage.json"
 
 
 @dataclass
@@ -69,12 +68,7 @@ def save_resource_usage(
 ) -> bool:
     """Save resource usage to JSON without raising monitoring errors."""
     try:
-        artifact_path = Path(output_path)
-        artifact_path.parent.mkdir(parents=True, exist_ok=True)
-        artifact_path.write_text(
-            json.dumps(usage, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
+        save_json(usage, output_path)
         return True
     except Exception as error:  # pragma: no cover - filesystem failures vary
         LOGGER.warning("Resource usage artifact was not saved: %s", error)

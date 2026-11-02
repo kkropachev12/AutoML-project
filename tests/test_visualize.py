@@ -1,11 +1,11 @@
-import pandas as pd
 import optuna
+import pandas as pd
 
 from src.visualize import (
-    plot_optuna_history,
     plot_churn_distribution,
     plot_confusion_matrix,
     plot_monthly_charges_by_churn,
+    plot_optuna_history,
     plot_roc_curve,
     save_baseline_plots,
 )
