@@ -72,15 +72,17 @@ ETL реализован в [src/data.py](src/data.py).
 
 - колонка `TotalCharges` приводится к числовому типу;
 - некорректные значения в `TotalCharges` заменяются на `NaN`;
-- пропуски в `TotalCharges` заполняются медианой;
+- пропуски в `TotalCharges` остаются до обучения pipeline;
 - целевая переменная `Churn` отделяется от признаков;
 - колонка `customerID` удаляется из признаков, потому что это технический идентификатор клиента.
 
 Дальше preprocessing выполняется внутри `sklearn Pipeline`:
 
-- числовые признаки: заполнение пропусков медианой и `StandardScaler`;
+- числовые признаки: заполнение пропусков медианой **обучающей выборки** и `StandardScaler`;
 - категориальные признаки: заполнение самым частым значением и `OneHotEncoder`;
 - объединение обработки через `ColumnTransformer`.
+
+Медиана и остальные параметры preprocessing обучаются только на train. Validation и test преобразуются уже обученным pipeline — их данные не участвуют в расчёте медианы.
 
 ### Load
 
@@ -181,6 +183,8 @@ Validation `ROC-AUC`: `0.83497`.
 
 ## Полученные метрики
 
+Ниже сохранены результаты исходного запуска до рефакторинга и исправления заполнения пропусков. Это исторические метрики: после изменений полное обучение не повторялось. Новый запуск записывает актуальные значения в `artifacts/*metrics.json`.
+
 Метрики baseline на test set:
 
 | Метрика | Значение |
@@ -256,7 +260,7 @@ MLflow-логирование реализовано в [src/tracking.py](src/tr
 Запуск MLflow UI:
 
 ```bash
-mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000
+poetry run mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000
 ```
 
 После запуска UI доступен по адресу:
@@ -281,106 +285,103 @@ mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000
 - сохранение `resource_usage.json`;
 - устойчивое поведение MLflow-логирования.
 
-Локальный запуск тестов:
+Проверки выполняются в GitHub Actions при `push` и `pull_request`:
+
+1. Установка зависимостей из `poetry.lock`.
+2. Проверка согласованности lock-файла, линтер и форматирование через pre-commit.
+3. Запуск `pytest`, включая небольшие тесты обучения на синтетических данных.
+
+Полное обучение и Docker-сборка в CI не запускаются.
+
+## Окружение и запуск
+
+Используйте Python 3.12 и [Poetry 2.2.1](https://python-poetry.org/docs/#installation).
+Код поддерживает Python 3.11–3.12; `.python-version`, Docker и CI используют 3.12.
 
 ```bash
-pytest
+poetry env use python3.12
+poetry sync
+poetry run pre-commit install
 ```
 
-Если используется виртуальное окружение проекта:
+Poetry создаёт локальную `.venv/` благодаря `poetry.toml`. В Git хранятся
+`pyproject.toml`, `poetry.lock`, `poetry.toml` и `.python-version`, а сама `.venv/`
+исключена через `.gitignore`: готовое окружение зависит от ОС и расположения Python.
+`poetry sync` приводит состав окружения в соответствие с lock-файлом, включая удаление
+пакетов, не объявленных в нём.
+
+Рабочие зависимости отделены от группы `dev` с pytest, Ruff и pre-commit.
+`requirements.txt` сохранён для совместимости со старой установкой через pip;
+он не фиксирует все транзитивные зависимости и не используется в CI и Docker.
+Для воспроизводимого окружения используйте Poetry.
+
+Обучение baseline и AutoML:
 
 ```bash
-.venv/bin/pytest
+poetry run python -m src.train --automl-trials 20
 ```
+
+Результаты сохраняются в `artifacts/`: модели в `models/`, графики в `plots/`,
+метрики, параметры и измерения ресурсов — в JSON-файлы.
+
+## Проверки кода
+
+[Ruff](https://docs.astral.sh/ruff/) проверяет ошибки, импорты и типичные проблемы
+Python-кода, а также задаёт единое форматирование. [pre-commit](https://pre-commit.com/)
+запускает проверки перед коммитом. Хуки используют Ruff из окружения Poetry,
+поэтому версии инструментов локально и в GitHub Actions совпадают.
+
+Если проверка нашла замечания, примените автоматические исправления и просмотрите diff:
+
+```bash
+poetry run ruff check --fix src tests
+poetry run ruff format src tests
+```
+
+При необходимости те же проверки можно вызвать вручную:
+
+```bash
+poetry run pre-commit run --all-files
+poetry run pytest
+```
+
+Настройки находятся в `pyproject.toml`, `.pre-commit-config.yaml` и `pytest.ini`.
+После каждого нового клонирования репозитория нужно выполнить `poetry run pre-commit install`:
+сам Git-хук не переносится вместе с репозиторием. Если окружение ещё не установлено,
+сначала выполните `poetry sync`.
 
 ## Docker
 
-Dockerfile находится в корне проекта: [Dockerfile](Dockerfile).
-
-Образ использует `python:3.11-slim`, устанавливает зависимости из `requirements.txt` и запускает обучение командой:
-
-```bash
-python -m src.train --automl-trials 20
-```
-
-Сборка образа:
+[Dockerfile](Dockerfile) использует Python 3.12 и тот же `poetry.lock`, что и CI.
+В образ устанавливаются только рабочие зависимости (`poetry sync --only main`),
+без pytest, Ruff и pre-commit.
 
 ```bash
 docker build -t netology-automl .
+docker run --rm -v "$PWD/artifacts:/app/artifacts" netology-automl
 ```
 
-Запуск обучения в контейнере:
+Подключение `artifacts/` сохраняет результаты обучения на компьютере после удаления
+контейнера. Количество попыток AutoML можно передать после имени образа:
 
 ```bash
-docker run --rm netology-automl
+docker run --rm -v "$PWD/artifacts:/app/artifacts" netology-automl --automl-trials 2
 ```
 
-Быстрый smoke-запуск с малым числом AutoML trials:
+## GitHub Actions
 
-```bash
-docker run --rm netology-automl --automl-trials 2
-```
-
-## CI/CD
-
-CI/CD реализован через GitHub Actions:
-
-`.github/workflows/ci.yml`
-
-Workflow запускается на `push` и `pull_request`.
-
-Что делает CI:
-
-1. Забирает репозиторий.
-2. Устанавливает Python 3.12.
-3. Устанавливает зависимости из `requirements.txt`.
-4. Запускает `pytest`.
-
-CI не запускает тяжелое обучение и не собирает Docker-образ. Для учебного проекта этого достаточно: автоматические проверки быстро ловят ошибки в ETL, pipeline, AutoML, MLflow-логировании, мониторинге и графиках.
-
-## Инструкция запуска проекта
-
-Установка зависимостей:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-Запуск полного обучения baseline + AutoML:
-
-```bash
-python -m src.train --automl-trials 20
-```
-
-Быстрый запуск для проверки:
-
-```bash
-python -m src.train --automl-trials 2
-```
-
-После запуска результаты будут сохранены в `artifacts/`:
-
-- `artifacts/baseline_metrics.json`;
-- `artifacts/best_metrics.json`;
-- `artifacts/best_params.json`;
-- `artifacts/resource_usage.json`;
-- `artifacts/models/baseline_model.joblib`;
-- `artifacts/models/best_model.joblib`;
-- `artifacts/plots/*.png`.
-
-Запуск тестов:
-
-```bash
-.venv/bin/pytest
-```
+Workflow [.github/workflows/ci.yml](.github/workflows/ci.yml) запускает проверки
+кода и тесты на Python 3.12. Используются Poetry 2.2.1 и зафиксированные версии из
+`poetry.lock`. Коммит проходит проверку только при успешном завершении обоих этапов.
 
 ## Структура репозитория
 
 ```text
 .
 ├── src/                 # исходный код ML-пайплайна
+│   ├── config.py        # общие пути и параметры обучения
+│   ├── metrics.py       # единый расчёт метрик
+│   ├── artifacts.py     # сохранение JSON и моделей
 │   ├── data.py          # загрузка, очистка и подготовка данных
 │   ├── pipeline.py      # preprocessing и baseline pipeline
 │   ├── train.py         # запуск baseline и AutoML-обучения
@@ -396,7 +397,12 @@ python -m src.train --automl-trials 2
 ├── notebooks/           # место для исследовательских ноутбуков
 ├── .github/workflows/   # GitHub Actions CI
 ├── Dockerfile           # Docker-образ для запуска обучения
-├── requirements.txt     # зависимости проекта
+├── pyproject.toml       # зависимости, группы и настройки Ruff
+├── poetry.lock          # точные версии зависимостей
+├── poetry.toml          # создание окружения в .venv
+├── .python-version      # версия Python для разработки
+├── .pre-commit-config.yaml # проверки перед коммитом
+├── requirements.txt     # прежний способ установки через pip
 ├── pytest.ini           # настройки pytest
 └── README.md            # итоговый отчет
 ```

@@ -7,7 +7,6 @@ import logging
 from pathlib import Path
 from typing import Any
 
-
 LOGGER = logging.getLogger(__name__)
 DEFAULT_EXPERIMENT_NAME = "telco-churn-automl"
 

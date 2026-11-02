@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pandas as pd
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_DATA_PATH = PROJECT_ROOT / "data" / "telco_customer_churn.csv"
-DEFAULT_DATASET_INFO_PATH = PROJECT_ROOT / "artifacts" / "dataset_info.json"
+from src.artifacts import save_json
+from src.config import DEFAULT_DATA_PATH, DEFAULT_DATASET_INFO_PATH
+from src.metrics import target_to_binary
 
 
 def load_raw_data(
@@ -19,18 +17,20 @@ def load_raw_data(
 ) -> pd.DataFrame:
     """Load the raw Telco Customer Churn CSV file."""
     data_path = Path(path)
+    if not data_path.is_file():
+        raise FileNotFoundError(f"Dataset not found: {data_path}")
     df = pd.read_csv(data_path)
     save_dataset_info(df, dataset_info_path)
     return df
 
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
-    """Clean raw Telco Customer Churn data."""
+    """Convert numeric values without learning statistics from the full dataset."""
     cleaned_df = df.copy()
 
     if "TotalCharges" in cleaned_df.columns:
         total_charges = pd.to_numeric(cleaned_df["TotalCharges"], errors="coerce")
-        cleaned_df["TotalCharges"] = total_charges.fillna(total_charges.median())
+        cleaned_df["TotalCharges"] = total_charges
 
     return cleaned_df
 
@@ -41,6 +41,9 @@ def prepare_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
         raise ValueError("Column 'Churn' is required to prepare X and y.")
 
     y = df["Churn"].copy()
+    target_to_binary(y)
+    if y.nunique() != 2:
+        raise ValueError("Training requires both churn classes.")
     X = df.drop(columns=["Churn"]).drop(columns=["customerID"], errors="ignore")
 
     return X, y
@@ -51,9 +54,6 @@ def save_dataset_info(
     path: str | Path = DEFAULT_DATASET_INFO_PATH,
 ) -> dict[str, object]:
     """Save a short dataset summary to a JSON artifact."""
-    artifact_path = Path(path)
-    artifact_path.parent.mkdir(parents=True, exist_ok=True)
-
     churn_distribution = {}
     if "Churn" in df.columns:
         churn_distribution = {
@@ -68,9 +68,6 @@ def save_dataset_info(
         "churn_distribution": churn_distribution,
     }
 
-    artifact_path.write_text(
-        json.dumps(dataset_info, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    save_json(dataset_info, path)
 
     return dataset_info
