@@ -4,11 +4,11 @@
 
 ## Описание проекта
 
-Это учебный итоговый проект по AutoML на датасете Telco Customer Churn. Цель проекта — построить воспроизводимый ML-пайплайн, который прогнозирует риск оттока клиента телеком-компании.
+Это учебный итоговый проект по AutoML. Цель проекта — построить воспроизводимый ML-пайплайн, который прогнозирует риск оттока клиента телеком-компании.
 
 Документация модели:
 
-- [Model Card](model_card.md) — назначение, данные, метрики и ограничения модели.
+- [Model Card](model_card.md) — назначение, метрики и ограничения модели.
 - [Место модели в бизнес-процессе](Model_BPMN.md) — схема и описание применения скоринга.
 - [Автоматическое переобучение](Model_retrain_BPMN.md) — триггеры, проверки, публикация версии и откат.
 
@@ -23,10 +23,7 @@
 
 ML-задача — бинарная классификация.
 
-Модель по данным клиента прогнозирует целевую переменную `Churn`:
-
-- `Yes` — клиент ушел;
-- `No` — клиент остался.
+Модель прогнозирует, уйдёт клиент или останется.
 
 Основная метрика для подбора AutoML-модели — `ROC-AUC`, потому что она показывает, насколько хорошо модель разделяет клиентов с оттоком и без оттока при разных порогах.
 
@@ -37,72 +34,21 @@ ML-задача — бинарная классификация.
 - `Recall`;
 - `F1-score`.
 
-## Датасет Telco Customer Churn
+## Подготовка признаков
 
-В проекте используется готовый CSV-файл Telco Customer Churn из Kaggle или IBM Sample Data:
+Preprocessing выполняется внутри `sklearn Pipeline`:
 
-`data/telco_customer_churn.csv`
-
-В датасете 7043 строки и 21 колонка. Каждая строка описывает одного клиента телеком-компании.
-
-Основные группы признаков:
-
-- демография: `gender`, `SeniorCitizen`, `Partner`, `Dependents`;
-- информация о клиенте: `tenure`, `Contract`, `PaymentMethod`, `PaperlessBilling`;
-- подключенные услуги: `PhoneService`, `InternetService`, `OnlineSecurity`, `TechSupport`, `StreamingTV`, `StreamingMovies`;
-- платежи: `MonthlyCharges`, `TotalCharges`;
-- целевая переменная: `Churn`.
-
-Распределение целевой переменной:
-
-| Churn | Количество клиентов |
-| --- | ---: |
-| No | 5174 |
-| Yes | 1869 |
-
-Класс `Yes` меньше класса `No`, поэтому при интерпретации результата важно смотреть не только на `Accuracy`, но и на `Recall`, `Precision`, `F1-score` и `ROC-AUC`.
-
-## ETL
-
-ETL реализован в [src/data.py](src/data.py).
-
-### Extract
-
-Данные загружаются из готового CSV-файла:
-
-`data/telco_customer_churn.csv`
-
-### Transform
-
-На этапе очистки выполняются простые и понятные преобразования:
-
-- колонка `TotalCharges` приводится к числовому типу;
-- некорректные значения в `TotalCharges` заменяются на `NaN`;
-- пропуски в `TotalCharges` остаются до обучения pipeline;
-- целевая переменная `Churn` отделяется от признаков;
-- колонка `customerID` удаляется из признаков, потому что это технический идентификатор клиента.
-
-Дальше preprocessing выполняется внутри `sklearn Pipeline`:
-
-- числовые признаки: заполнение пропусков медианой **обучающей выборки** и `StandardScaler`;
+- числовые признаки: заполнение пропусков медианой обучающей выборки и `StandardScaler`;
 - категориальные признаки: заполнение самым частым значением и `OneHotEncoder`;
 - объединение обработки через `ColumnTransformer`.
 
-Медиана и остальные параметры preprocessing обучаются только на train. Validation и test преобразуются уже обученным pipeline — их данные не участвуют в расчёте медианы.
-
-### Load
-
-Краткая информация о датасете сохраняется в:
-
-`artifacts/dataset_info.json`
-
-Туда записываются количество строк, количество колонок, список колонок и распределение `Churn`.
+Параметры preprocessing обучаются только на train. Validation и test преобразуются уже обученным pipeline.
 
 ## Схема ML-пайплайна
 
 ```mermaid
 flowchart TD
-    A["Extract<br/>CSV Telco Customer Churn"] --> B["Transform<br/>TotalCharges cleanup<br/>missing values<br/>categorical encoding<br/>train/test split"]
+    A["Подготовка признаков"] --> B["Preprocessing<br/>missing values<br/>categorical encoding<br/>train/test split"]
     B --> C["AutoML<br/>Optuna<br/>model selection<br/>hyperparameter tuning"]
     C --> D["Evaluation<br/>Accuracy<br/>Precision<br/>Recall<br/>F1-score<br/>ROC-AUC<br/>Confusion Matrix"]
     D --> E["Load<br/>model, metrics and plots<br/>artifacts/"]
@@ -117,7 +63,7 @@ flowchart TD
     G -.-> F
 ```
 
-Пайплайн начинается с загрузки CSV-файла. Затем данные очищаются, признаки подготавливаются, обучается baseline-модель и запускается AutoML-подбор. После обучения сохраняются модель, метрики, параметры, графики и данные мониторинга.
+Пайплайн включает подготовку признаков, обучение baseline-модели и AutoML-подбор. После обучения сохраняются модель, метрики, параметры, графики и данные мониторинга.
 
 ## Baseline-модель
 
@@ -219,8 +165,6 @@ Validation `ROC-AUC`: `0.83497`.
 
 Основные графики:
 
-- [Распределение Churn](artifacts/plots/churn_distribution.png) — баланс классов `Yes` и `No`;
-- [MonthlyCharges по Churn](artifacts/plots/monthly_charges_by_churn.png) — сравнение ежемесячных платежей для ушедших и оставшихся клиентов;
 - [Confusion matrix](artifacts/plots/confusion_matrix.png) — ошибки и верные ответы классификации;
 - [ROC curve](artifacts/plots/roc_curve.png) — качество разделения классов при разных порогах.
 
@@ -229,7 +173,7 @@ AutoML-графики:
 - [Feature importance](artifacts/plots/feature_importance.png) — признаки, которые сильнее всего влияют на прогноз финальной модели;
 - [Optuna optimization history](artifacts/plots/optuna_history.png) — история подбора Optuna по validation `ROC-AUC`.
 
-Эти визуализации помогают проверить не только итоговые числа, но и поведение модели: баланс классов, ошибки классификации, качество ранжирования клиентов и важные признаки.
+Эти визуализации помогают оценить ошибки классификации, качество ранжирования и ход AutoML-подбора.
 
 ## Мониторинг через MLflow и psutil
 
@@ -279,8 +223,7 @@ poetry run mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000
 
 Проверяется:
 
-- загрузка CSV-данных;
-- очистка `TotalCharges`;
+- подготовка признаков;
 - подготовка `X` и `y`;
 - создание baseline pipeline;
 - обучение baseline на маленьком примере;
@@ -396,7 +339,6 @@ Workflow [.github/workflows/ci.yml](.github/workflows/ci.yml) запускает
 │   ├── tracking.py      # MLflow-логирование
 │   └── monitor.py       # psutil-мониторинг ресурсов
 ├── tests/               # pytest-тесты
-├── data/                # CSV-данные
 ├── artifacts/           # модели, метрики, графики и JSON-артефакты
 │   ├── models/          # сохраненные модели
 │   └── plots/           # графики
@@ -427,4 +369,4 @@ Workflow [.github/workflows/ci.yml](.github/workflows/ci.yml) запускает
 - если удерживающие предложения дорогие, нужно следить за `Precision`;
 - следующие улучшения стоит начинать с анализа порога классификации, class weights и дополнительных признаков.
 
-Итог: проект показывает полный путь от CSV-данных до обученной модели, метрик, графиков, мониторинга и автоматических тестов.
+Проект объединяет обучение модели, оценку качества, графики, мониторинг и автоматические тесты.
